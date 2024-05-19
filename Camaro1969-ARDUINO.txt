@@ -1,0 +1,179 @@
+#include <PS2X_lib.h>  //for v1.6
+#include <Servo.h>
+#include <TimerOne.h>
+PS2X ps2x; // create PS2 Controller Class
+
+
+int error = 0; 
+byte type = 0;
+byte vibrate = 0;
+int pos=70;
+int carga=0;
+float voltaje=0,maximo=5.0,medio=4.7,minimo=4.6;
+int tiempo=0;
+int sonido [7]={261,293,329,349,392,440,493};
+Servo myservo;
+
+
+
+void setup(){
+  Serial.begin(115200);
+  myservo.attach(2);
+  
+  Timer1.initialize(250000);         // Dispara cada 250 ms
+  Timer1.attachInterrupt(ISR_Blink);
+  
+  pinMode (36, OUTPUT);// LUCES DELANTERAS
+  pinMode (38, OUTPUT);//EXPLORADORAS
+  pinMode (40, OUTPUT);//STOPS TRACEROS
+  pinMode (3, OUTPUT); //CLACSON PITO
+  pinMode (42, OUTPUT); //MOTOR_IZQUIERDA
+  pinMode (44, OUTPUT); //MOTOR_DERECHA
+  pinMode (2, OUTPUT); //SERVOMOTOR DIRECCION
+  pinMode (7, OUTPUT); //PITO DE AVISO
+  pinMode (6, OUTPUT); //LED RGB BAATERIA
+
+
+
+//for(int i=0;i<7;i++)
+//{
+//  tone(7,sonido[i],500);
+//  delay(300);
+//  noTone(7);
+//}
+
+ //CHANGES for v1.6 HERE!!! **************PAY ATTENTION*************
+  
+ error = ps2x.config_gamepad(10,12,11,13, true, true);   //setup pins and settings:  GamePad(clock, command, attention, data, Pressures?, Rumble?) check for error
+ 
+ if(error == 0){
+   Serial.println("Found Controller, configured successful");
+   Serial.println("Try out all the buttons, X will vibrate the controller, faster as you press harder;");
+  Serial.println("holding L1 or R1 will print out the analog stick values.");
+  Serial.println("Go to www.billporter.info for updates and to report bugs.");
+ }
+   
+  else if(error == 1)
+   Serial.println("No controller found, check wiring, see readme.txt to enable debug. visit www.billporter.info for troubleshooting tips");
+   
+  else if(error == 2)
+   Serial.println("Controller found but not accepting commands. see readme.txt to enable debug. Visit www.billporter.info for troubleshooting tips");
+   
+  else if(error == 3)
+   Serial.println("Controller refusing to enter Pressures mode, may not support it. ");
+   
+   //Serial.print(ps2x.Analog(1), HEX);
+   
+   type = ps2x.readType(); 
+     switch(type) {
+       case 0:
+        Serial.println("Unknown Controller type");
+       break;
+       case 1:
+        Serial.println("DualShock Controller Found");
+       break;
+    
+     }
+  
+}
+
+void ISR_Blink()
+   { 
+    
+//    if(tiempo == 120) // ha pasado 30 segundos
+//    {
+//    if(voltaje>medio && voltaje<=maximo)analogWrite(6,255);
+//    else if(voltaje>minimo && voltaje<medio)digitalWrite(6,100);for(int j=0;j<=4;j++){digitalWrite(7,HIGH);delay(100);digitalWrite(7,LOW);delay(100);}
+//    tiempo=0;
+//    }
+//    tiempo++;
+   }
+
+   
+void loop(){
+
+if(error == 1){type = ps2x.readType();return; }
+  
+//carga=analogRead(A0); //VERIFICACION DEL VOLTAJE DE LAS BATERIAS.
+//voltaje = 0.0048*carga;
+
+
+
+
+
+
+
+
+
+
+
+if(type == 1) { //DualShock Controller
+
+        ps2x.read_gamepad(false, vibrate);
+
+        
+         if(ps2x.ButtonPressed(PSB_RED))              // PITAR
+         digitalWrite (3, HIGH);
+         if(ps2x.ButtonReleased(PSB_RED))             // SOLTAR PITO
+         digitalWrite (3, LOW);
+         vibrate = ps2x.Analog(PSAB_RED);
+
+         
+         if(ps2x.ButtonPressed(PSB_BLUE))              // PRENDER LUCES
+         digitalWrite (36, HIGH);
+         if(ps2x.ButtonPressed(PSB_PINK))            // APAGAR LUCES
+         digitalWrite (36, LOW),digitalWrite (38, LOW),digitalWrite (40, LOW);;
+
+
+          
+         
+        if(ps2x.ButtonPressed(PSB_PAD_UP))          // MOTORES HACIA ADELANTE
+      {         
+        digitalWrite (42, HIGH);digitalWrite (44, LOW);
+      }
+      if(ps2x.ButtonReleased(PSB_PAD_UP))        // MOTOR QUIETO
+      {
+        digitalWrite (42, LOW);digitalWrite (44, LOW);
+      }
+
+      
+        if(ps2x.ButtonPressed(PSB_PAD_DOWN))          // MOTORES HACIA ATRAS Y STOPS
+      {         
+        digitalWrite (42, LOW);digitalWrite (44, HIGH);digitalWrite (40, HIGH);
+      }
+      if(ps2x.ButtonReleased(PSB_PAD_DOWN))        // MOTOR QUIETO
+      {
+        digitalWrite (42, LOW);digitalWrite (44, LOW);digitalWrite (40, LOW);
+      }
+
+
+
+
+      
+      if(ps2x.Button(PSB_PAD_RIGHT)){             // GIRO A LA DERECHA
+       myservo.write(pos);
+       pos=pos+10;
+       if(pos>180)pos=180; 
+      }
+      
+      if(ps2x.Button(PSB_PAD_LEFT)){           // GIRO A LA IZQUIERDA
+       myservo.write(pos);
+       pos=pos-10;
+       if(pos<1)pos=1;
+      }
+
+
+
+      
+if (ps2x.NewButtonState())               //will be TRUE if any button changes state (on to off, or off to on)
+    {
+        if(ps2x.Button(PSB_R2))digitalWrite (38, HIGH);
+        if(ps2x.Button(PSB_L2))digitalWrite (38, LOW);
+    }   
+
+ }
+ 
+  
+ delay(50);
+     
+}
